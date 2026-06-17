@@ -1,0 +1,123 @@
+---
+name: 'Deploy To Google Cloud Run'
+description: 'Deploy a service revision to Google Cloud Run using gcloud SDK'
+branding:
+  icon: 'upload-cloud'
+  color: 'orange'
+inputs:
+  project_id:
+    description: 'GCP project ID'
+    required: true
+  service_account_key:
+    description: 'Base64 encoded JSON key for GCP service account'
+    required: false
+    default: ''
+  image_name:
+    description: 'Name of container image to be deployed'
+    required: true
+  service_name:
+    description: 'Name of the service to be deployed'
+    required: true
+  gcp_region:
+    description: 'GCP region to deploy the service in'
+    required: true
+  image_tag:
+    description: 'Tag of container image to be deployed'
+    required: false
+    default: ''
+  image_tag_pattern:
+    description: 'Regex pattern to identify the image_tag automatically'
+    required: false
+    default: ''
+  concurrency_per_instance:
+    description: 'Max number of concurrent requests per instance, max: 80'
+    required: false
+    default: '80'
+  cpu:
+    description: 'VCPU limit per instance'
+    required: false
+    default: '1'
+  memory:
+    description: 'Memory limit per instance'
+    required: false
+    default: '256Mi'
+  max_instances:
+    description: 'Max number of instances to be scaled'
+    required: false
+    default: '10'
+  min_instances:
+    description: 'Min number of instances to be available in idle'
+    required: false
+    default: '0'
+  request_timeout:
+    description: 'Timeout for a single request to be processed'
+    required: false
+    default: '10s'
+  allow_unauthenticated:
+    description: 'Whether the service should not be protected by GCP authorization'
+    required: false
+    default: 'true'
+  cpu_throttling:
+    description: 'Set to false so that CPU is always allocated and available even when there are no incoming requests'
+    required: false
+    default: 'true'
+  startup_boost:
+    description: 'Set to true to have additional CPU available at startup time'
+    required: false
+    default: 'false'
+  service_account:
+    description: 'Service Account to be used by the revision to be deployed'
+    required: false
+    default: 'default'
+  no_traffic:
+    description: 'Set to true to just deploy a new revision without shifting traffic'
+    required: false
+    default: 'false'
+  cloudsql_instances:
+    description: 'Comma separated list of CloudSQL instances to connect to'
+    required: false
+    default: ''
+  vpc_connector:
+    description: 'Name of the Serverless VPC Access connector to use with this service'
+    required: false
+    default: ''
+  vpc_egress:
+    description: 'Outbound traffic configuration, if a vpc_connector is configured'
+    required: false
+    default: 'private-ranges-only'
+  vpc_network:
+    description: 'Name of VPC network when using direct VPC egress'
+    required: false
+    default: ''
+  vpc_subnet:
+    description: 'Name of VPC network''s subnet'
+    required: false
+    default: ''
+  vpc_network_tags:
+    description: 'Comma-separated list of network tags'
+    required: false
+    default: ''
+  ingress:
+    description: 'Allowed ingress traffic sources'
+    required: false
+    default: 'all'
+  debug:
+    description: 'Whether the gcloud commands should be printed to output'
+    required: false
+    default: 'false'
+  execution_environment:
+    description: 'Selects the execution environment where the application will run'
+    required: false
+    default: ''
+outputs:
+  cloud_run_revision:
+    description: 'Revision of the deployed service'
+  cloud_run_endpoint:
+    description: 'Endpoint the service is serving at'
+  gcloud_log:
+    description: 'Log output of the gcloud run deploy command'
+  deployed_image_tag:
+    description: 'Tag of the deployed image'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
