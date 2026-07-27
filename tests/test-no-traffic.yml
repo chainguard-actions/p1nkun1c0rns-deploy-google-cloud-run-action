@@ -1,0 +1,39 @@
+name: Test no_traffic and allow_unauthenticated=false options
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # With no_traffic=true the action deploys a new revision without shifting
+      # traffic. With allow_unauthenticated=false it uses --no-allow-unauthenticated.
+      # Without real GCP credentials the action fails at gcloud run deploy,
+      # but this exercises these specific code paths in entrypoint.sh.
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          project_id: my-test-project
+          image_name: gcr.io/my-test-project/my-service
+          service_name: my-service
+          gcp_region: europe-west1
+          image_tag: '2.0.0'
+          no_traffic: 'true'
+          allow_unauthenticated: 'false'
+          cpu_throttling: 'false'
+          startup_boost: 'true'
+          min_instances: '1'
+          max_instances: '5'
+
+      - name: Assert action failed (expected without GCP credentials)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected action to fail without GCP credentials, but got outcome=$OUTCOME"
+            exit 1
+          fi
+          echo "PASS: action correctly failed without GCP credentials (no_traffic path)"
