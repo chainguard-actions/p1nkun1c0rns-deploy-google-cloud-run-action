@@ -14,6 +14,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | v1.21.13 | [`v1.21.13`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.13) | [`cd205dd`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/cd205ddf241c0149249a88e794923fdd017e6610) |
 | v1.21.14 | [`v1.21.14`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.14) | [`d37c06a`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/d37c06a9914fbda89480e360e3b3fa931ee12391) |
 | v1.21.15 | [`v1.21.15`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.15) | [`cd001db`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/cd001dbf6b05b1ee1ed3d80e1144c14db477e311) |
+| v1.21.16 | [`v1.21.16`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.16) | [`2275e32`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/2275e3229c2b7227aff1f0fe085e8369c0595b6b) |
 
 ## Privacy
 
