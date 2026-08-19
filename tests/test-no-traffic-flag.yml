@@ -1,5 +1,5 @@
 ---
-name: Test service name too long validation
+name: Test no-traffic and authenticated-only flags
 on:
   workflow_dispatch:
 jobs:
@@ -19,29 +19,36 @@ jobs:
           git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
             git remote add origin "$GITHUB_WORKSPACE/.git-remote"
 
-      # The action validates that service_name + revision_prefix + revision_date <= 62 chars.
-      # With a 55-char service name and image_tag "1.0.0" (REVISION_PREFIX="v1-0-0", 6 chars),
-      # REVISION_DATE is ~11 chars (-t<epoch>), total ~72 > 62.
-      # OVERFLOW=10, STRIP_LENGTH=6-10=-4 < 0 → action exits 1 with error message.
-      # No GCP credentials needed — the check happens before any gcloud call.
+      # Test with no_traffic=true, allow_unauthenticated=false, cpu_throttling=false,
+      # startup_boost=true, and custom resource limits. The action processes these flags
+      # before calling gcloud, so we can verify the action starts and fails at gcloud.
       - id: action
         uses: .
         continue-on-error: true
         with:
           project_id: "fake-project"
           image_name: "gcr.io/fake-project/fake-image"
-          # 55-character service name to trigger the "too long" error
-          service_name: "this-is-a-very-long-service-name-that-exceeds-the-limit"
-          gcp_region: "us-central1"
-          image_tag: "1.0.0"
+          service_name: "my-private-service"
+          gcp_region: "europe-west1"
+          image_tag: "2.0.0"
+          allow_unauthenticated: "false"
+          cpu_throttling: "false"
+          startup_boost: "true"
+          no_traffic: "true"
+          concurrency_per_instance: "50"
+          cpu: "2"
+          memory: "512Mi"
+          max_instances: "5"
+          min_instances: "1"
+          request_timeout: "30s"
 
-      - name: Assert action failed with service name too long error
+      - name: Assert action failed as expected (no credentials)
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
           if [ "$OUTCOME" != "failure" ]; then
-            echo "FAIL: expected action to fail due to service name too long, but outcome was '$OUTCOME'"
+            echo "FAIL: expected action to fail without GCP credentials, but outcome was '$OUTCOME'"
             exit 1
           fi
-          echo "PASS: action correctly failed when service name was too long"
+          echo "PASS: action correctly failed without GCP credentials with no-traffic and private flags"

@@ -246,10 +246,12 @@ else
   ENDPOINT=""
 fi
 
-echo gcloud_log="<pre>$(sed ':a;N;$!ba;s/\n/<br>/g' gcloud.log)</pre><hr><pre>$(sed ':a;N;$!ba;s/\n/<br>/g' traffic.log)</pre>" >> $GITHUB_OUTPUT
+safe_gcloud_log=$(printf '%s' "<pre>$(sed ':a;N;$!ba;s/\n/<br>/g' gcloud.log)</pre><hr><pre>$(sed ':a;N;$!ba;s/\n/<br>/g' traffic.log)</pre>" | tr -d '\n\r')
+echo gcloud_log="${safe_gcloud_log}" >> $GITHUB_OUTPUT
 safe_service_name=$(printf '%s' "${SERVICE_NAME}" | tr -d '\n\r')
 safe_revision_suffix=$(printf '%s' "${REVISION_SUFFIX}" | tr -d '\n\r')
 safe_image_tag=$(printf '%s' "${IMAGE_TAG}" | tr -d '\n\r')
-echo "cloud_run_revision=${safe_service_name}-${safe_revision_suffix}" >> "$GITHUB_OUTPUT"
-echo "cloud_run_endpoint=${ENDPOINT}" >> "$GITHUB_OUTPUT"
-echo "deployed_image_tag=${safe_image_tag}" >> "$GITHUB_OUTPUT"
+echo cloud_run_revision="${safe_service_name}-${safe_revision_suffix}" >> $GITHUB_OUTPUT
+safe_endpoint=$(printf '%s' "${ENDPOINT}" | tr -d '\n\r')
+echo cloud_run_endpoint="${safe_endpoint}" >> $GITHUB_OUTPUT
+echo deployed_image_tag="${safe_image_tag}" >> $GITHUB_OUTPUT
