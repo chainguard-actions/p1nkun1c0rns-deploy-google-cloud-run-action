@@ -6,15 +6,15 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 ## Versions
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| v1.21.10 | [`v1.21.10`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.10) | [`01df5b0`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/01df5b0edf8caaa67d90e5fe51a02a856eeacadb) |
-| v1.21.11 | [`v1.21.11`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.11) | [`803ec3a`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/803ec3a2cb71dc1bf5e241ff390d17e84428929f) |
-| v1.21.12 | [`v1.21.12`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.12) | [`fe64882`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/fe64882669533d21409ff5546c15c7b47870cbd6) |
-| v1.21.13 | [`v1.21.13`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.13) | [`cd205dd`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/cd205ddf241c0149249a88e794923fdd017e6610) |
-| v1.21.14 | [`v1.21.14`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.14) | [`d37c06a`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/d37c06a9914fbda89480e360e3b3fa931ee12391) |
-| v1.21.15 | [`v1.21.15`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.15) | [`cd001db`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/cd001dbf6b05b1ee1ed3d80e1144c14db477e311) |
-| v1.21.16 | [`v1.21.16`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.16) | [`2275e32`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/2275e3229c2b7227aff1f0fe085e8369c0595b6b) |
+| Version | Tag | Upstream commit | Hardening report |
+|---------|-----|-----------------|------------------|
+| v1.21.10 | [`v1.21.10`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.10) | [`01df5b0`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/01df5b0edf8caaa67d90e5fe51a02a856eeacadb) | [`HARDENING.md`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/blob/v1.21.10/HARDENING.md) |
+| v1.21.11 | [`v1.21.11`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.11) | [`803ec3a`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/803ec3a2cb71dc1bf5e241ff390d17e84428929f) | [`HARDENING.md`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/blob/v1.21.11/HARDENING.md) |
+| v1.21.12 | [`v1.21.12`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.12) | [`fe64882`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/fe64882669533d21409ff5546c15c7b47870cbd6) | [`HARDENING.md`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/blob/v1.21.12/HARDENING.md) |
+| v1.21.13 | [`v1.21.13`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.13) | [`cd205dd`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/cd205ddf241c0149249a88e794923fdd017e6610) | [`HARDENING.md`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/blob/v1.21.13/HARDENING.md) |
+| v1.21.14 | [`v1.21.14`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.14) | [`d37c06a`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/d37c06a9914fbda89480e360e3b3fa931ee12391) | [`HARDENING.md`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/blob/v1.21.14/HARDENING.md) |
+| v1.21.15 | [`v1.21.15`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.15) | [`cd001db`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/cd001dbf6b05b1ee1ed3d80e1144c14db477e311) | [`HARDENING.md`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/blob/v1.21.15/HARDENING.md) |
+| v1.21.16 | [`v1.21.16`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/tree/v1.21.16) | [`2275e32`](https://github.com/p1nkun1c0rns/deploy-google-cloud-run-action/commit/2275e3229c2b7227aff1f0fe085e8369c0595b6b) | [`HARDENING.md`](https://github.com/chainguard-actions/p1nkun1c0rns-deploy-google-cloud-run-action/blob/v1.21.16/HARDENING.md) |
 
 ## Privacy
 
