@@ -1,0 +1,77 @@
+name: Test explicit tag with no_traffic on existing service
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Prepare fake gcloud (service already exists)
+        run: |
+          chmod +x "$GITHUB_WORKSPACE/tests/fixtures/fakebin/gcloud"
+          rm -rf "$GITHUB_WORKSPACE/.gcloud-calls"
+          mkdir -p "$GITHUB_WORKSPACE/.gcloud-calls"
+          touch "$GITHUB_WORKSPACE/.gcloud-calls/service-exists"
+      - id: action
+        uses: .
+        env:
+          BASH_ENV: ${{ github.workspace }}/tests/fixtures/bash-env.sh
+        with:
+          project_id: my-project
+          image_name: gcr.io/my-project/my-image
+          image_tag: 1.2.3
+          service_name: api
+          gcp_region: us-central1
+          no_traffic: 'true'
+          allow_unauthenticated: 'false'
+          cpu_throttling: 'false'
+          startup_boost: 'true'
+          service_account: runner@my-project.iam.gserviceaccount.com
+          cloudsql_instances: my-project:us-central1:db
+          vpc_connector: my-connector
+          ingress: internal
+          execution_environment: gen2
+          memory: 512Mi
+      - name: Assert outputs
+        env:
+          REVISION: ${{ steps.action.outputs.cloud_run_revision }}
+          ENDPOINT: ${{ steps.action.outputs.cloud_run_endpoint }}
+          TAG: ${{ steps.action.outputs.deployed_image_tag }}
+        run: |
+          echo "revision: $REVISION"
+          echo "endpoint: '$ENDPOINT'"
+          echo "tag: $TAG"
+          if [ "$TAG" != "1.2.3" ]; then echo "FAIL: expected tag '1.2.3'"; exit 1; fi
+          if [ -n "$ENDPOINT" ]; then echo "FAIL: endpoint should be empty with no_traffic"; exit 1; fi
+          if ! echo "$REVISION" | grep -qE '^api-v1-2-3-t[0-9]+$'; then echo "FAIL: unexpected revision"; exit 1; fi
+          echo "PASS"
+      - name: Assert gcloud invocation
+        run: |
+          CALLS="$GITHUB_WORKSPACE/.gcloud-calls/calls.log"
+          cat "$CALLS"
+          DEPLOY="$(grep '^gcloud run deploy ' "$CALLS")"
+          for expected in \
+            "--image=gcr.io/my-project/my-image:1.2.3" \
+            "--labels=version=1-2-3" \
+            "--no-traffic" \
+            "--no-allow-unauthenticated" \
+            "--no-cpu-throttling" \
+            "--cpu-boost" \
+            "--service-account=runner@my-project.iam.gserviceaccount.com" \
+            "--set-cloudsql-instances=my-project:us-central1:db" \
+            "--vpc-connector=my-connector" \
+            "--vpc-egress=private-ranges-only" \
+            "--ingress=internal" \
+            "--execution-environment=gen2" \
+            "--memory=512Mi" \
+            "--clear-env-vars"; do
+            if ! echo "$DEPLOY" | grep -qF -- "$expected"; then
+              echo "FAIL: deploy command missing '$expected'"
+              exit 1
+            fi
+          done
+          if grep -q 'update-traffic' "$CALLS"; then
+            echo "FAIL: traffic must not be updated when no_traffic is true"
+            exit 1
+          fi
+          echo "PASS"

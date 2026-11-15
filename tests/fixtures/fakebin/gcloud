@@ -1,0 +1,40 @@
+#!/bin/sh
+# Fake gcloud used by the act tests. Records every invocation and returns
+# canned responses for the commands the action's entrypoint uses.
+LOG_DIR="${GITHUB_WORKSPACE:-/github/workspace}/.gcloud-calls"
+mkdir -p "$LOG_DIR"
+echo "gcloud $*" >> "$LOG_DIR/calls.log"
+
+case "$*" in
+  "version"*)
+    echo "Google Cloud SDK 0.0.0 (fake)"
+    exit 0
+    ;;
+  "auth activate-service-account"*)
+    echo "Activated service account credentials (fake)"
+    exit 0
+    ;;
+  "run services describe"*)
+    if [ -f "$LOG_DIR/service-exists" ]; then
+      echo "service exists (fake)"
+      exit 0
+    fi
+    echo "ERROR: (gcloud.run.services.describe) Cannot find service (fake)" >&2
+    exit 1
+    ;;
+  "run deploy"*)
+    echo "Deploying container to Cloud Run service [$3] (fake)"
+    echo "Done."
+    exit 0
+    ;;
+  "run services update-traffic"*)
+    echo "Updating traffic (fake)... Done."
+    echo "URL: https://fake-service-abc123-ew.a.run.app"
+    exit 0
+    ;;
+  "container images list-tags"*)
+    echo '[{"tags":["1.2.0","1.10.0"]},{"tags":["2.0.0","latest"]},{"tags":["1.9.5"]}]'
+    exit 0
+    ;;
+esac
+exit 0

@@ -1,0 +1,77 @@
+name: Test basic deploy (default tag, traffic shifted)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Prepare fake gcloud
+        run: |
+          chmod +x "$GITHUB_WORKSPACE/tests/fixtures/fakebin/gcloud"
+          rm -rf "$GITHUB_WORKSPACE/.gcloud-calls"
+          mkdir -p "$GITHUB_WORKSPACE/.gcloud-calls"
+      - id: action
+        uses: .
+        env:
+          BASH_ENV: ${{ github.workspace }}/tests/fixtures/bash-env.sh
+          SET_ENV_FOO: bar
+        with:
+          project_id: my-project
+          image_name: gcr.io/my-project/my-image
+          service_name: My-Service
+          gcp_region: europe-west1
+      - name: Assert outputs
+        env:
+          REVISION: ${{ steps.action.outputs.cloud_run_revision }}
+          ENDPOINT: ${{ steps.action.outputs.cloud_run_endpoint }}
+          TAG: ${{ steps.action.outputs.deployed_image_tag }}
+          LOG: ${{ steps.action.outputs.gcloud_log }}
+        run: |
+          echo "revision: $REVISION"
+          echo "endpoint: $ENDPOINT"
+          echo "tag: $TAG"
+          echo "log: $LOG"
+          if [ "$TAG" != "latest" ]; then echo "FAIL: expected tag 'latest'"; exit 1; fi
+          if [ "$ENDPOINT" != "https://fake-service-abc123-ew.a.run.app" ]; then echo "FAIL: unexpected endpoint"; exit 1; fi
+          if ! echo "$REVISION" | grep -qE '^my-service-vlatest-t[0-9]+$'; then echo "FAIL: unexpected revision"; exit 1; fi
+          if ! echo "$LOG" | grep -q "Deploying container to Cloud Run service \[my-service\]"; then echo "FAIL: gcloud log missing deploy output"; exit 1; fi
+          echo "PASS"
+      - name: Assert gcloud invocation
+        run: |
+          CALLS="$GITHUB_WORKSPACE/.gcloud-calls/calls.log"
+          cat "$CALLS"
+          DEPLOY="$(grep '^gcloud run deploy ' "$CALLS")"
+          for expected in \
+            "--region=europe-west1" \
+            "--image=gcr.io/my-project/my-image:latest" \
+            "--concurrency=80" \
+            "--cpu=1" \
+            "--max-instances=10" \
+            "--min-instances=0" \
+            "--memory=256Mi" \
+            "--timeout=10s" \
+            "--labels=version=latest" \
+            "--allow-unauthenticated" \
+            "--cpu-throttling" \
+            "--no-cpu-boost" \
+            "--clear-cloudsql-instances" \
+            "--clear-vpc-connector" \
+            "--clear-network" \
+            "--ingress=all" \
+            "--set-env-vars=^---__---^FOO=bar" \
+            "--clear-secrets"; do
+            if ! echo "$DEPLOY" | grep -qF -- "$expected"; then
+              echo "FAIL: deploy command missing '$expected'"
+              exit 1
+            fi
+          done
+          if echo "$DEPLOY" | grep -qF -- "--no-traffic"; then
+            echo "FAIL: --no-traffic must not be used for a new service"
+            exit 1
+          fi
+          if ! grep -q '^gcloud run services update-traffic my-service' "$CALLS"; then
+            echo "FAIL: traffic was not updated"
+            exit 1
+          fi
+          echo "PASS"

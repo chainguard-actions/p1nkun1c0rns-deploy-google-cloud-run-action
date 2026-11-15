@@ -1,0 +1,38 @@
+name: Test image tag resolved from pattern
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Prepare fake gcloud
+        run: |
+          chmod +x "$GITHUB_WORKSPACE/tests/fixtures/fakebin/gcloud"
+          rm -rf "$GITHUB_WORKSPACE/.gcloud-calls"
+          mkdir -p "$GITHUB_WORKSPACE/.gcloud-calls"
+      - id: action
+        uses: .
+        env:
+          BASH_ENV: ${{ github.workspace }}/tests/fixtures/bash-env.sh
+        with:
+          project_id: my-project
+          image_name: gcr.io/my-project/my-image
+          image_tag_pattern: '1\.'
+          service_name: web
+          gcp_region: europe-west3
+      - name: Assert highest matching tag deployed
+        env:
+          TAG: ${{ steps.action.outputs.deployed_image_tag }}
+          REVISION: ${{ steps.action.outputs.cloud_run_revision }}
+        run: |
+          echo "tag: $TAG"
+          echo "revision: $REVISION"
+          cat "$GITHUB_WORKSPACE/.gcloud-calls/calls.log"
+          if [ "$TAG" != "1.10.0" ]; then echo "FAIL: expected tag '1.10.0'"; exit 1; fi
+          if ! echo "$REVISION" | grep -qE '^web-v1-10-0-t[0-9]+$'; then echo "FAIL: unexpected revision"; exit 1; fi
+          if ! grep -qF -- "--image=gcr.io/my-project/my-image:1.10.0" "$GITHUB_WORKSPACE/.gcloud-calls/calls.log"; then
+            echo "FAIL: deploy not called with resolved image"
+            exit 1
+          fi
+          echo "PASS"
