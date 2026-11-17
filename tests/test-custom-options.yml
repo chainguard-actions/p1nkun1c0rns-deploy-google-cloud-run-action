@@ -1,0 +1,72 @@
+name: Test custom deploy options on existing service
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Reset mock call log
+        run: rm -f "$GITHUB_WORKSPACE/gcloud-calls.log"
+      - id: action
+        uses: .
+        env:
+          BASH_ENV: tests/fixtures/mock-gcloud.sh
+          MOCK_SERVICE_EXISTS: 'true'
+        with:
+          project_id: my-project
+          image_name: gcr.io/my-project/my-image
+          service_name: svc
+          gcp_region: us-central1
+          image_tag: 3.0.0
+          concurrency_per_instance: '40'
+          cpu: '2'
+          memory: 1Gi
+          max_instances: '5'
+          min_instances: '1'
+          request_timeout: 30s
+          allow_unauthenticated: 'false'
+          cpu_throttling: 'false'
+          startup_boost: 'true'
+          liveness_probe: httpGet.path=/healthz,periodSeconds=30
+          service_account: runner@my-project.iam.gserviceaccount.com
+          cloudsql_instances: my-project:us-central1:db
+          vpc_connector: my-connector
+          vpc_egress: all-traffic
+          ingress: internal
+          execution_environment: gen2
+      - name: Show mock calls
+        run: cat "$GITHUB_WORKSPACE/gcloud-calls.log"
+      - name: Assert custom flags
+        run: |
+          LOG="$GITHUB_WORKSPACE/gcloud-calls.log"
+          DEPLOY="$(grep '^gcloud run deploy ' "$LOG")"
+          echo "deploy call: $DEPLOY"
+          for f in "--concurrency=40" "--cpu=2" "--memory=1Gi" "--max-instances=5" \
+                   "--min-instances=1" "--timeout=30s" "--no-traffic" \
+                   "--no-allow-unauthenticated" "--no-cpu-throttling" "--cpu-boost" \
+                   "--liveness-probe=httpGet.path=/healthz,periodSeconds=30" \
+                   "--service-account=runner@my-project.iam.gserviceaccount.com" \
+                   "--set-cloudsql-instances=my-project:us-central1:db" \
+                   "--vpc-connector=my-connector" "--vpc-egress=all-traffic" \
+                   "--clear-network" "--ingress=internal" "--execution-environment=gen2"; do
+            if ! echo "$DEPLOY" | grep -qF -- " $f"; then
+              echo "FAIL: missing flag $f"
+              exit 1
+            fi
+          done
+          if ! grep -q '^gcloud run services update-traffic svc --to-latest' "$LOG"; then
+            echo "FAIL: traffic should be shifted (no_traffic=false)"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert endpoint
+        env:
+          ACTUAL: ${{ steps.action.outputs.cloud_run_endpoint }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$ACTUAL" != "https://mock-service-abc123-ew.a.run.app" ]; then
+            echo "FAIL: unexpected endpoint"
+            exit 1
+          fi
+          echo "PASS"

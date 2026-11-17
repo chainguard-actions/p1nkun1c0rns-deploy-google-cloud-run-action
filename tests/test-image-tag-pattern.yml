@@ -1,0 +1,44 @@
+name: Test image tag detection by pattern
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Reset mock call log
+        run: rm -f "$GITHUB_WORKSPACE/gcloud-calls.log"
+      - id: action
+        uses: .
+        env:
+          BASH_ENV: tests/fixtures/mock-gcloud.sh
+        with:
+          project_id: my-project
+          image_name: gcr.io/my-project/my-image
+          service_name: svc
+          gcp_region: us-central1
+          image_tag_pattern: '1\.'
+      - name: Show mock calls
+        run: cat "$GITHUB_WORKSPACE/gcloud-calls.log"
+      - name: Assert highest matching tag selected
+        env:
+          ACTUAL: ${{ steps.action.outputs.deployed_image_tag }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$ACTUAL" != "1.10.0" ]; then
+            echo "FAIL: expected '1.10.0' (highest 1.x by version sort)"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert registry queried and image deployed
+        run: |
+          LOG="$GITHUB_WORKSPACE/gcloud-calls.log"
+          if ! grep -q '^gcloud container images list-tags gcr.io/my-project/my-image' "$LOG"; then
+            echo "FAIL: list-tags not called"
+            exit 1
+          fi
+          if ! grep -qF -- "--image=gcr.io/my-project/my-image:1.10.0" "$LOG"; then
+            echo "FAIL: deploy did not use detected tag"
+            exit 1
+          fi
+          echo "PASS"

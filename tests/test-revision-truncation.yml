@@ -1,0 +1,31 @@
+name: Test revision prefix truncation for long service names
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Reset mock call log
+        run: rm -f "$GITHUB_WORKSPACE/gcloud-calls.log"
+      - id: action
+        uses: .
+        env:
+          BASH_ENV: tests/fixtures/mock-gcloud.sh
+        with:
+          project_id: my-project
+          image_name: gcr.io/my-project/my-image
+          # 46 chars: 46 + len("v1-2-3")=6 + len("-t<10 digits>")=12 = 64 > 62 -> strip to "v1-2"
+          service_name: abcdefghijabcdefghijabcdefghijabcdefghijabcdef
+          gcp_region: us-central1
+          image_tag: 1.2.3
+      - name: Assert truncated revision
+        env:
+          ACTUAL: ${{ steps.action.outputs.cloud_run_revision }}
+        run: |
+          echo "actual: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -qE '^abcdefghijabcdefghijabcdefghijabcdefghijabcdef-v1-2-t[0-9]+$'; then
+            echo "FAIL: expected revision prefix truncated to 'v1-2'"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,99 @@
+name: Test basic deploy with explicit image tag
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Reset mock call log
+        run: rm -f "$GITHUB_WORKSPACE/gcloud-calls.log"
+      - id: action
+        uses: .
+        env:
+          BASH_ENV: tests/fixtures/mock-gcloud.sh
+        with:
+          project_id: my-project
+          image_name: gcr.io/my-project/my-image
+          service_name: MyService
+          gcp_region: europe-west1
+          image_tag: 1.2.3
+      - name: Show mock calls
+        run: cat "$GITHUB_WORKSPACE/gcloud-calls.log"
+      - name: Assert deployed_image_tag
+        env:
+          ACTUAL: ${{ steps.action.outputs.deployed_image_tag }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$ACTUAL" != "1.2.3" ]; then
+            echo "FAIL: expected '1.2.3'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert cloud_run_revision
+        env:
+          ACTUAL: ${{ steps.action.outputs.cloud_run_revision }}
+        run: |
+          echo "actual: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -qE '^myservice-v1-2-3-t[0-9]+$'; then
+            echo "FAIL: expected 'myservice-v1-2-3-t<timestamp>'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert cloud_run_endpoint
+        env:
+          ACTUAL: ${{ steps.action.outputs.cloud_run_endpoint }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$ACTUAL" != "https://mock-service-abc123-ew.a.run.app" ]; then
+            echo "FAIL: unexpected endpoint"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert gcloud_log
+        env:
+          ACTUAL: ${{ steps.action.outputs.gcloud_log }}
+        run: |
+          echo "actual: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "Deploying container to Cloud Run service \[myservice\]"; then
+            echo "FAIL: gcloud_log missing deploy output"
+            exit 1
+          fi
+          if ! echo "$ACTUAL" | grep -q "^<pre>"; then
+            echo "FAIL: gcloud_log not wrapped in <pre>"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert gcloud deploy flags
+        run: |
+          LOG="$GITHUB_WORKSPACE/gcloud-calls.log"
+          DEPLOY="$(grep '^gcloud run deploy ' "$LOG")"
+          echo "deploy call: $DEPLOY"
+          for f in "--region=europe-west1" "--image=gcr.io/my-project/my-image:1.2.3" \
+                   "--concurrency=80" "--cpu=1" "--max-instances=10" "--min-instances=0" \
+                   "--memory=256Mi" "--timeout=10s" "--labels=version=1-2-3" \
+                   "--allow-unauthenticated" "--cpu-throttling" "--no-cpu-boost" \
+                   "--clear-cloudsql-instances" "--clear-vpc-connector" "--clear-network" \
+                   "--ingress=all" "--no-use-http2" "--clear-env-vars" "--clear-secrets"; do
+            if ! echo "$DEPLOY" | grep -qF -- " $f"; then
+              echo "FAIL: missing flag $f"
+              exit 1
+            fi
+          done
+          if echo "$DEPLOY" | grep -qF -- "--no-traffic"; then
+            echo "FAIL: --no-traffic must not be set for a new service"
+            exit 1
+          fi
+          if echo "$DEPLOY" | grep -qF -- "--service-account"; then
+            echo "FAIL: --service-account must not be set for default"
+            exit 1
+          fi
+          if ! grep -q '^gcloud run services update-traffic myservice --to-latest' "$LOG"; then
+            echo "FAIL: traffic was not shifted to latest"
+            exit 1
+          fi
+          if grep -q '^gcloud auth' "$LOG"; then
+            echo "FAIL: auth should not run without a key"
+            exit 1
+          fi
+          echo "PASS"

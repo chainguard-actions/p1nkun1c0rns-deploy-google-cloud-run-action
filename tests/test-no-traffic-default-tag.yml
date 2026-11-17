@@ -1,0 +1,64 @@
+name: Test no_traffic with default latest tag
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Reset mock call log
+        run: rm -f "$GITHUB_WORKSPACE/gcloud-calls.log"
+      - id: action
+        uses: .
+        env:
+          BASH_ENV: tests/fixtures/mock-gcloud.sh
+        with:
+          project_id: my-project
+          image_name: gcr.io/my-project/my-image
+          service_name: svc
+          gcp_region: us-central1
+          no_traffic: 'true'
+      - name: Show mock calls
+        run: cat "$GITHUB_WORKSPACE/gcloud-calls.log"
+      - name: Assert deployed_image_tag is latest
+        env:
+          ACTUAL: ${{ steps.action.outputs.deployed_image_tag }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$ACTUAL" != "latest" ]; then
+            echo "FAIL: expected 'latest'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert revision
+        env:
+          ACTUAL: ${{ steps.action.outputs.cloud_run_revision }}
+        run: |
+          echo "actual: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -qE '^svc-vlatest-t[0-9]+$'; then
+            echo "FAIL: expected 'svc-vlatest-t<timestamp>'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert endpoint empty
+        env:
+          ACTUAL: ${{ steps.action.outputs.cloud_run_endpoint }}
+        run: |
+          echo "actual: '$ACTUAL'"
+          if [ -n "$ACTUAL" ]; then
+            echo "FAIL: expected empty endpoint with no_traffic"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert no traffic update
+        run: |
+          LOG="$GITHUB_WORKSPACE/gcloud-calls.log"
+          if ! grep -qF -- "--image=gcr.io/my-project/my-image:latest" "$LOG"; then
+            echo "FAIL: deploy did not use latest tag"
+            exit 1
+          fi
+          if grep -q 'update-traffic' "$LOG"; then
+            echo "FAIL: update-traffic should not be called"
+            exit 1
+          fi
+          echo "PASS"
